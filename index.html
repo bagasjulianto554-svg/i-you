@@ -1,13 +1,99 @@
+
 <!doctype html>
-<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7efe6"><title>i & you — our mailbox</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head>
-<body><header class="top"><a class="brand" href="#">♡ i <i>&</i> you</a><span>a little place for our letters ✦</span><button id="logout" class="link hidden">Keluar ↗</button></header>
-<main>
-<section id="auth" class="auth grid"><div class="intro"><small>✳ A LITTLE MAILBOX FOR TWO</small><h1>Some words<br>are worth <em>waiting for.</em></h1><p>Tempat kecil untuk menitipkan cerita, mengirim rindu, dan menunggu balasan dari seseorang yang berarti.</p><div class="stamp">SENT WITH<br>LOVE ♡</div></div><div class="panel"><div class="envelope"><span>♡</span></div><small>WELCOME TO OUR MAILBOX</small><h2 id="authTitle">Masuk ke kotak surat</h2><p class="muted">Surat kalian disimpan online, agar bisa dibuka dari perangkat masing-masing.</p><form id="authForm"><label>Email</label><input id="email" type="email" required placeholder="kamu@email.com"><label>Kata sandi</label><input id="password" type="password" minlength="6" required placeholder="Minimal 6 karakter"><button class="primary full" id="authSubmit">Masuk ke kotak surat →</button></form><p class="switch"><span id="switchLabel">Belum punya akun?</span> <button id="switchAuth" class="link">Buat akun</button></p><p id="authMsg" class="msg"></p></div></section>
-<section id="setup" class="hidden setup panel"><small>JUST THE TWO OF US</small><h1>Let’s make <em>our mailbox.</em></h1><p class="muted">Satu orang membuat kotak surat, lalu bagikan kode rahasianya kepada pasangan.</p><button id="create" class="primary">Buat kotak surat baru ♡</button><div class="or">atau gabung dengan kode</div><form id="joinForm" class="join"><input id="joinCode" maxlength="10" placeholder="KODE 10 KARAKTER" required><button class="secondary">Gabung →</button></form><p id="setupMsg" class="msg"></p></section>
-<section id="mailbox" class="hidden"><div class="welcome"><div><small>✳ OUR LITTLE CORNER</small><h1>Dear you, <em>always.</em></h1><p class="muted">Apa pun harimu, selalu ada tempat untuk bercerita di sini.</p></div><div class="stamp round">OUR POST OFFICE<br><b>♡</b><br>OPEN EVERY DAY</div></div><div class="room"><span>● Kotak surat kita: <b id="roomCode">—</b></span><button id="copyCode" class="link">Salin kode ↗</button></div>
-<div class="grid mailbox-grid"><section class="panel write"><small>01 / WRITE A LETTER</small><h2>A note from <em>my heart.</em></h2><p class="muted">Nggak harus selalu kata-kata indah. Ceritakan saja hal kecil yang ingin kamu bagi.</p><form id="letterForm"><label>Judul surat</label><input id="letterTitle" maxlength="80" required placeholder="Hari ini aku ingin cerita..."><label>Isi surat</label><textarea id="letterBody" maxlength="5000" rows="7" required placeholder="Hai kamu, hari ini..."></textarea><div class="formbottom"><small id="count">0 / 5000</small><button class="primary">Kirim surat ♡</button></div></form><p id="letterMsg" class="msg"></p></section>
-<section class="panel mailbox-art"><small>02 / THE MAILBOX</small><div class="postbox"><div class="slot"></div><span>♡</span><div class="flag"></div></div><h2>Letters we <em>keep.</em></h2><p class="muted">Setiap surat adalah cara kecil untuk bilang, “aku ingat kamu.”</p><div class="stats"><div><b id="total">0</b><small>ALL LETTERS</small></div><div><b id="waiting">0</b><small>WAITING REPLIES</small></div></div><blockquote>“The best part of a letter is knowing it was meant for you.”</blockquote></section></div>
-<section class="letters"><div class="letters-head"><div><small>03 / IN OUR MAIL</small><h2>Letters to <em>come back to.</em></h2></div><div class="filters"><button class="filter active" data-filter="all">Semua</button><button class="filter" data-filter="received">Untukku</button><button class="filter" data-filter="sent">Kirimanku</button></div></div><div id="lettersList" class="cards"><div class="empty">♡<h3>Belum ada surat di sini</h3><p>Jadilah yang pertama meninggalkan surat kecil.</p></div></div></section><footer>made for two, kept with care ♡</footer></section>
-</main>
-<div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="shade" data-close></div><article class="letter"><button class="close" data-close>×</button><small>✳ A LETTER FOR YOU ✳</small><p id="modalDate" class="muted"></p><h2 id="modalTitle">Dear you,</h2><div id="modalBody" class="letterbody"></div><p id="signature" class="signature">with love, ♡</p><section id="replyArea" class="hidden"><hr><small>YOUR REPLY</small><form id="replyForm"><label>Tulis balasanmu</label><textarea id="replyBody" rows="4" maxlength="3000" required placeholder="Aku sudah membaca suratmu..."></textarea><button class="primary">Kirim balasan ↗</button></form></section><section id="repliesArea" class="hidden"><hr><small>REPLIES</small><div id="repliesList"></div></section></article></div><div id="toast" class="toast"></div>
-<script type="module" src="script.js"></script></body></html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8dce5">
+  <title>i & you — Kotak Surat Kita</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <div class="logo">♡</div>
+      <p class="eyebrow">A LITTLE PLACE FOR US</p>
+      <h1>i <span>&</span> you</h1>
+      <p>Surat kecil, rasa yang besar.</p>
+    </header>
+
+    <section id="setup" class="card">
+      <h2>💌 Kotak surat kita</h2>
+      <p>Masukkan nama dan kode pasangan yang sama di kedua HP.</p>
+      <form id="setupForm">
+        <label for="username">Nama panggilan kamu</label>
+        <input id="username" maxlength="30" placeholder="Contoh: You" required>
+        <label for="pairCode">Kode pasangan</label>
+        <input id="pairCode" minlength="8" maxlength="80"
+          placeholder="Kode rahasia minimal 8 karakter" required>
+        <button type="submit">Buka kotak surat ♡</button>
+      </form>
+      <p id="setupMessage" class="message"></p>
+    </section>
+
+    <section id="app" hidden>
+      <div class="welcome">
+        <div>
+          <p class="eyebrow">KOTAK SURAT KITA</p>
+          <h2>Hai, <span id="welcomeName"></span> ♡</h2>
+        </div>
+        <button id="changeProfile" class="light-button">Ganti nama</button>
+      </div>
+
+      <div class="envelope-area">
+        <div class="envelope"><span>♡</span></div>
+        <p>Selalu ada cerita untuk disampaikan.</p>
+      </div>
+
+      <nav class="tabs">
+        <button type="button" data-tab="inbox">Kotak masuk</button>
+        <button type="button" data-tab="write">Tulis surat</button>
+      </nav>
+
+      <section id="inbox" class="card">
+        <h2>♡ Surat untuk kita</h2>
+        <div id="lettersList"></div>
+        <p id="inboxMessage" class="message"></p>
+        <button id="refreshButton" class="light-button">Muat ulang surat</button>
+      </section>
+
+      <section id="write" class="card" hidden>
+        <h2>✎ Tulis surat baru</h2>
+        <form id="letterForm">
+          <label for="letterTitle">Judul surat</label>
+          <input id="letterTitle" maxlength="100"
+            placeholder="Untuk hari ini..." required>
+          <label for="letterBody">Isi surat</label>
+          <textarea id="letterBody" rows="7" maxlength="10000"
+            placeholder="Hai kamu..." required></textarea>
+          <button type="submit">Kirim surat ♡</button>
+        </form>
+        <p id="writeMessage" class="message"></p>
+      </section>
+
+      <footer class="footer">dibuat dengan hati ♡</footer>
+    </section>
+  </main>
+
+  <dialog id="letterDialog" class="dialog">
+    <button id="closeDialog" class="light-button close">Tutup ×</button>
+    <p id="dialogSender" class="eyebrow"></p>
+    <h2 id="dialogTitle"></h2>
+    <p id="dialogDate" class="muted"></p>
+    <div id="dialogBody" class="letter-body"></div>
+    <hr>
+    <h3>Balasan ♡</h3>
+    <div id="repliesList"></div>
+    <form id="replyForm">
+      <label for="replyBody">Tulis balasan</label>
+      <textarea id="replyBody" rows="4" maxlength="5000"
+        placeholder="Aku ingin bilang..." required></textarea>
+      <button type="submit">Kirim balasan ♡</button>
+    </form>
+    <p id="replyMessage" class="message"></p>
+  </dialog>
+</body>
+  </html>
+  
