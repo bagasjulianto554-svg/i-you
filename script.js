@@ -1,14 +1,30 @@
 
+/* =====================================
+   I & YOU — KOTAK SURAT KITA
+   ===================================== */
+
+/*
+  Untuk sinkronisasi online, isi URL project
+  dan anon/publishable key dari Supabase.
+  Jangan pernah masukkan service_role key di sini.
+*/
+
 const SUPABASE_URL = "ISI_URL_PROJECT_SUPABASE_DI_SINI";
 const SUPABASE_ANON_KEY = "ISI_ANON_PUBLIC_KEY_DI_SINI";
 
-const configured =
+const supabaseReady =
   SUPABASE_URL.startsWith("https://") &&
-  SUPABASE_ANON_KEY !== "ISI_ANON_PUBLIC_KEY_DI_SINI";
+  SUPABASE_ANON_KEY !== "ISI_ANON_PUBLIC_KEY_DI_SINI" &&
+  typeof window.supabase !== "undefined";
 
-const db = configured
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const db = supabaseReady
+  ? window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    )
   : null;
+
+/* Elemen halaman */
 
 const $ = (id) => document.getElementById(id);
 
@@ -16,13 +32,20 @@ let profile = null;
 let currentLetter = null;
 let letters = [];
 
-function message(id, text) {
-  $(id).textContent = text;
+/* Pesan informasi */
+
+function showMessage(id, text) {
+  const element = $(id);
+  if (element) element.textContent = text;
 }
+
+/* Penyimpanan lokal untuk mode percobaan */
 
 function getLocalLetters() {
   try {
-    return JSON.parse(localStorage.getItem("iy_letters") || "[]");
+    return JSON.parse(
+      localStorage.getItem("iy_letters") || "[]"
+    );
   } catch {
     return [];
   }
@@ -32,46 +55,79 @@ function saveLocalLetters(data) {
   localStorage.setItem("iy_letters", JSON.stringify(data));
 }
 
+/* Profil pengguna */
+
+function saveProfile(name, code) {
+  profile = {
+    name: name.trim(),
+    code: code.trim()
+  };
+
+  localStorage.setItem(
+    "iy_profile",
+    JSON.stringify(profile)
+  );
+}
+
 function showApp() {
   $("setup").hidden = true;
   $("app").hidden = false;
+
   $("welcomeName").textContent = profile.name;
+
   loadLetters();
 }
 
-$("setupForm").addEventListener("submit", async (event) => {
+/* Form awal */
+
+$("setupForm").addEventListener("submit", (event) => {
   event.preventDefault();
 
   const name = $("username").value.trim();
   const code = $("pairCode").value.trim();
 
-  if (!name || code.length < 8) {
-    message("setupMessage", "Isi nama dan kode minimal 8 karakter.");
+  if (!name) {
+    showMessage("setupMessage", "Masukkan nama panggilanmu.");
     return;
   }
 
-  profile = { name, code };
-  localStorage.setItem("iy_profile", JSON.stringify(profile));
+  if (code.length < 8) {
+    showMessage(
+      "setupMessage",
+      "Kode pasangan harus minimal 8 karakter."
+    );
+    return;
+  }
+
+  saveProfile(name, code);
   showApp();
 });
+
+/* Ganti nama atau kode pasangan */
 
 $("changeProfile").addEventListener("click", () => {
   $("app").hidden = true;
   $("setup").hidden = false;
+
   $("username").value = profile?.name || "";
   $("pairCode").value = profile?.code || "";
 });
 
+/* Navigasi tab */
+
 document.querySelectorAll("[data-tab]").forEach((button) => {
   button.addEventListener("click", () => {
     const tab = button.dataset.tab;
+
     $("inbox").hidden = tab !== "inbox";
     $("write").hidden = tab !== "write";
   });
 });
 
+/* Memuat surat */
+
 async function loadLetters() {
-  message("inboxMessage", "Memuat surat...");
+  showMessage("inboxMessage", "Memuat surat...");
 
   try {
     if (db) {
@@ -80,7 +136,8 @@ async function loadLetters() {
       });
 
       if (error) throw error;
-      letters = data || [];
+
+      letters = Array.isArray(data) ? data : [];
     } else {
       letters = getLocalLetters().filter(
         (letter) => letter.code === profile.code
@@ -88,16 +145,31 @@ async function loadLetters() {
     }
 
     renderLetters();
-    message(
-      "inboxMessage",
-      db
-        ? letters.length ? "" : "Belum ada surat. Kamu bisa memulai ♡"
-        : "Mode percobaan: surat hanya tersimpan di HP ini."
-    );
+
+    if (db) {
+      showMessage(
+        "inboxMessage",
+        letters.length
+          ? ""
+          : "Belum ada surat. Kamu bisa memulai ♡"
+      );
+    } else {
+      showMessage(
+        "inboxMessage",
+        "Mode percobaan: surat tersimpan di browser ini saja."
+      );
+    }
   } catch (error) {
-    message("inboxMessage", "Gagal memuat surat: " + error.message);
+    console.error(error);
+
+    showMessage(
+      "inboxMessage",
+      "Gagal memuat surat. Periksa koneksi dan pengaturan Supabase."
+    );
   }
 }
+
+/* Menampilkan daftar surat */
 
 function renderLetters() {
   const list = $("lettersList");
@@ -113,6 +185,7 @@ function renderLetters() {
 
   [...letters].reverse().forEach((letter) => {
     const button = document.createElement("button");
+
     button.type = "button";
     button.className = "letter-card";
 
@@ -128,23 +201,40 @@ function renderLetters() {
       : "";
 
     button.append(title, sender, date);
-    button.addEventListener("click", () => openLetter(letter));
+
+    button.addEventListener("click", () => {
+      openLetter(letter);
+    });
+
     list.appendChild(button);
   });
 }
 
+/* Membuka surat dan balasannya */
+
 function openLetter(letter) {
   currentLetter = letter;
-  $("dialogSender").textContent = "DARI " + letter.sender;
-  $("dialogTitle").textContent = letter.title;
+
+  $("dialogSender").textContent =
+    "DARI " + (letter.sender || "Anonim");
+
+  $("dialogTitle").textContent =
+    letter.title || "Surat tanpa judul";
+
   $("dialogDate").textContent = letter.created_at
     ? new Date(letter.created_at).toLocaleString("id-ID")
     : "";
-  $("dialogBody").textContent = letter.body;
+
+  $("dialogBody").textContent = letter.body || "";
+
   renderReplies(letter.replies || []);
-  $("replyMessage").textContent = "";
+
+  showMessage("replyMessage", "");
+
   $("letterDialog").showModal();
 }
+
+/* Menampilkan balasan */
 
 function renderReplies(replies) {
   const list = $("repliesList");
@@ -173,21 +263,37 @@ function renderReplies(replies) {
   });
 }
 
+/* Menutup surat */
+
 $("closeDialog").addEventListener("click", () => {
   $("letterDialog").close();
 });
 
-$("refreshButton").addEventListener("click", loadLetters);
+/* Muat ulang kotak masuk */
+
+$("refreshButton").addEventListener("click", () => {
+  loadLetters();
+});
+
+/* Mengirim surat baru */
 
 $("letterForm").addEventListener("submit", async (event) => {
   event.preventDefault();
 
+  if (!profile) return;
+
   const title = $("letterTitle").value.trim();
   const body = $("letterBody").value.trim();
 
-  if (!title || !body) return;
+  if (!title || !body) {
+    showMessage(
+      "writeMessage",
+      "Judul dan isi surat tidak boleh kosong."
+    );
+    return;
+  }
 
-  message("writeMessage", "Mengirim surat...");
+  showMessage("writeMessage", "Mengirim surat...");
 
   try {
     if (db) {
@@ -201,6 +307,7 @@ $("letterForm").addEventListener("submit", async (event) => {
       if (error) throw error;
     } else {
       const data = getLocalLetters();
+
       data.push({
         id: Date.now().toString(),
         code: profile.code,
@@ -210,26 +317,43 @@ $("letterForm").addEventListener("submit", async (event) => {
         created_at: new Date().toISOString(),
         replies: []
       });
+
       saveLocalLetters(data);
     }
 
     $("letterForm").reset();
-    message("writeMessage", "Surat berhasil disimpan ♡");
+
+    showMessage(
+      "writeMessage",
+      "Surat berhasil disimpan ♡"
+    );
+
     await loadLetters();
   } catch (error) {
-    message("writeMessage", "Gagal mengirim: " + error.message);
+    console.error(error);
+
+    showMessage(
+      "writeMessage",
+      "Surat gagal dikirim. Periksa pengaturan Supabase."
+    );
   }
 });
+
+/* Mengirim balasan */
 
 $("replyForm").addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  if (!currentLetter) return;
+  if (!profile || !currentLetter) return;
 
   const body = $("replyBody").value.trim();
-  if (!body) return;
 
-  message("replyMessage", "Mengirim balasan...");
+  if (!body) {
+    showMessage("replyMessage", "Tulis balasan terlebih dahulu.");
+    return;
+  }
+
+  showMessage("replyMessage", "Mengirim balasan...");
 
   try {
     if (db) {
@@ -243,15 +367,19 @@ $("replyForm").addEventListener("submit", async (event) => {
       if (error) throw error;
     } else {
       const data = getLocalLetters();
+
       const letter = data.find(
         (item) =>
-          item.id === currentLetter.id &&
+          String(item.id) === String(currentLetter.id) &&
           item.code === profile.code
       );
 
-      if (!letter) throw new Error("Surat tidak ditemukan.");
+      if (!letter) {
+        throw new Error("Surat tidak ditemukan.");
+      }
 
       letter.replies = letter.replies || [];
+
       letter.replies.push({
         sender: profile.name,
         body,
@@ -262,26 +390,44 @@ $("replyForm").addEventListener("submit", async (event) => {
     }
 
     $("replyForm").reset();
-    message("replyMessage", "Balasan berhasil disimpan ♡");
+
     await loadLetters();
 
-    const updated = letters.find(
-      (letter) => String(letter.id) === String(currentLetter.id)
+    const updatedLetter = letters.find(
+      (letter) =>
+        String(letter.id) === String(currentLetter.id)
     );
 
-    if (updated) openLetter(updated);
+    if (updatedLetter) {
+      openLetter(updatedLetter);
+      showMessage("replyMessage", "Balasan berhasil disimpan ♡");
+    } else {
+      showMessage(
+        "replyMessage",
+        "Balasan tersimpan, tetapi surat perlu dimuat ulang."
+      );
+    }
   } catch (error) {
-    message("replyMessage", "Gagal membalas: " + error.message);
+    console.error(error);
+
+    showMessage(
+      "replyMessage",
+      "Balasan gagal dikirim. Periksa pengaturan Supabase."
+    );
   }
 });
 
-try {
-  const saved = JSON.parse(localStorage.getItem("iy_profile") || "null");
+/* Memulihkan profil saat halaman dibuka kembali */
 
-  if (saved?.name && saved?.code) {
-    profile = saved;
+try {
+  const savedProfile = JSON.parse(
+    localStorage.getItem("iy_profile") || "null"
+  );
+
+  if (savedProfile?.name && savedProfile?.code) {
+    profile = savedProfile;
     showApp();
   }
-} catch {
-  // Abaikan profil tersimpan yang tidak terbaca.
-}
+} catch (error) {
+  console.error("Profil tersimpan tidak dapat dibaca.", error);
+  }
